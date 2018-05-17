@@ -1,0 +1,2 @@
+###### Requirements with Version Specifiers ######
+scrapy == 1.5.0
