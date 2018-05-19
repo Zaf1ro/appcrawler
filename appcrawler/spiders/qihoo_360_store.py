@@ -1,28 +1,45 @@
 # !/usr/bin/python
 # coding: utf-8
 
+import logging
 import scrapy
 from scrapy import Request
 from scrapy.exceptions import CloseSpider
-from AppCrawler.pipelines.qihoo_360_pipeline import Qihoo360Item
-from AppCrawler.spiders import *
-from download import *
+import os
+from ..items import Qihoo360StoreItem
 
 # Category
+CATEGORY_360 = [
+    [11, u"系统安全"],
+    [12, u"通讯社交"],
+    [14, u"影音视听"],
+    [15, u"新闻阅读"],
+    [16, u"生活休闲"],
+    [18, u"主题壁纸"],
+    [17, u"办公商务"],
+    [102228, u"摄影摄像"],
+    [102231, u"地图旅游"],
+    [102232, u"教育学习"],
+    [102139, u"金融理财"],
+    [102233, u"健康医疗"]
+]
+
+# URL
 DOMAIN = "http://zhushou.360.cn"
 CATEGORY_URL = "http://zhushou.360.cn/list/index/cid/"
 ORDER_BY_DOWNLOAD_URL = "/order/download/?page="
 APP_URL = "http://zhushou.360.cn/detail/index/soft_id/"
 
 # XPATH
-APP_URL_XPATH = "//*[@id='iconList']/li/h3/a/@href"  # OK
-DOWNLOAD_URL_XPATH = "//*[@id='app-info-panel']/div/dl/dd/a/@href"  # OK
-DOWNLOAD_TIMES_XPATH = "//*[@id='app-info-panel']/div/dl/dd/div/span[3]/text()"  # OK
-APP_NAME_XPATH = "//*[@id='app-name']/span/@title"  # OK
+XPATH_APP_URL = "//*[@id='iconList']/li/h3/a/@href"  # OK
+XPATH_DOWNLOAD_URL = "//*[@id='app-info-panel']/div/dl/dd/a/@href"  # OK
+XPATH_DOWNLOAD_TIMES = "//*[@id='app-info-panel']/div/dl/dd/div/span[3]/text()"  # OK
+XPATH_APP_NAME = "//*[@id='app-name']/span/@title"  # OK
 
 
 class MainSpider(scrapy.Spider):
-    name = "360crawler"
+    name = "qihoo"
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
     def __init__(self, cat=None, save=None, *args, **kwargs):
         super(MainSpider, self).__init__(*args, **kwargs)
@@ -94,14 +111,14 @@ class MainSpider(scrapy.Spider):
 
         print(path)
 
-        app_urls = response.xpath(APP_URL_XPATH).extract()
+        app_urls = response.xpath(XPATH_APP_URL).extract()
         for url in app_urls:
             yield Request(url=DOMAIN + url, callback=self.parse_app, meta={"store": "360", "path": path})
 
     def parse_app(self, response):  # 处理单个应用
-        item = Qihoo360Item(store=response.meta["store"])
-        item['name'] = response.xpath(APP_NAME_XPATH).extract()[0]
-        original_apk_url = (response.xpath(DOWNLOAD_URL_XPATH).extract()[0]).split("/")
+        item = Qihoo360StoreItem(store=response.meta["store"])
+        item['name'] = response.xpath(XPATH_APP_NAME).extract()[0]
+        original_apk_url = (response.xpath(XPATH_DOWNLOAD_URL).extract()[0]).split("/")
         item['file_urls'] = "http://shouji.360tpcdn.com/" + \
                             original_apk_url[8] + '/' + \
                             original_apk_url[9] + '/' + \

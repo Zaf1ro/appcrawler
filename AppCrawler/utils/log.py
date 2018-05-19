@@ -42,7 +42,7 @@ def get_level(level):
 def get_log(name, min_level, mark='default'):
     logger = logging.getLogger(name)
     logger.setLevel(get_level(min_level))
-    print logger.level
+    print(logger.level)
     formatter = logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s: %(message)s')
 
     fh = logging.FileHandler(get_log_path(mark))

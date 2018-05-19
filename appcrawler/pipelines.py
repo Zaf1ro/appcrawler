@@ -1,9 +1,12 @@
+# !/usr/bin/python
+# coding: utf-8
+
 from scrapy import Request
 from scrapy.exceptions import DropItem
 from scrapy.pipelines.files import FilesPipeline
 
 
-class FileDownloadItem(FilesPipeline):
+class FileDownloadPipeline(FilesPipeline):
     def get_media_requests(self, item, info):
         for file_url in item["file_urls"]:
             yield Request(file_url)
@@ -14,4 +17,3 @@ class FileDownloadItem(FilesPipeline):
         if not file_paths:
             raise DropItem("Item contains no file")
         return item
-
