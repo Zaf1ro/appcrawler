@@ -1,78 +1,95 @@
 # !/usr/bin/python
 # coding: utf-8
 
+import json
 from scrapy import Request, Spider
 from scrapy.exceptions import CloseSpider
 from ..items import TencentAppGemItem
 
+# Limit of APP number of each category
+MAX_APP = 100
 
 # Category
-CATEGORY_tencent = [
-    [103, u"视频"],
-    [101, u"音乐"],
-    [122, u"购物"],
-    [102, u"阅读"],
-    [112, u"导航"],
-    [106, u"社交"],
-    [104, u"摄影"],
-    [110, u"新闻"],
-    [115, u"工具"],
-    [119, u"美化"],
-    [111, u"教育"],
-    [107, u"生活"],
-    [118, u"安全"],
-    [108, u"旅游"],
-    [100, u"儿童"],
-    [114, u"理财"],
-    [117, u"系统"],
-    [109, u"健康"],
-    [109, u"娱乐"],
-    [109, u"办公"],
-    [109, u"通讯"],
-]
-Domain = "http://android.app.qq.com"
-CATEGORY_URL = "http://android.app.qq.com/myapp/category.htm?orgame=1&categoryId="
+CATEGORY = {
+    '100': 0,
+    '101': 0,
+    '102': 0,
+    '103': 0,
+    '104': 0,
+    '105': 0,
+    '106': 0,
+    '107': 0,
+    '108': 0,
+    '109': 0,
+    '110': 0,
+    '111': 0,
+    '112': 0,
+    '113': 0,
+    '114': 0,
+    '115': 0,
+    '116': 0,
+    '117': 0,
+    '118': 0,
+    '119': 0,
+    '122': 0
+}
 
-XPATH_CATEGORY = "/html/body/div[3]/div[2]/ul/li[1]/div/a"
-XPATH_APP_DOWNLOAD_URL = '//*[@id="J_DetDataContainer"]/div/div[1]/div[3]/a[2]/@data-apkurl'
-XPATH_APP_NAME = '//*[@id="J_DetDataContainer"]/div/div[1]/div[2]/div[1]/div[1]'
+DOMAIN = 'http://android.app.qq.com'
+CATEGORY_URL = 'http://android.app.qq.com/myapp/cate/appList.htm?categoryId='
+EXTENDED_URL = '&pageSize=20&pageContext='
 
 
-class MAINSpider(Spider):
+class AppSpider(Spider):
     name = "tencent"
 
-    def __init__(self, cat=None, save=None, *args, **kwargs):
-        super(MAINSpider, self).__init__(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super(AppSpider, self).__init__(*args, **kwargs)
         self.allowed_domains = ["qq.com"]
-        self.categories = handle_category(cat, 'tencent')
+        # self.categories = handle_category(cat, 'tencent')
         # self.save - 保存方式 - unfinished
 
-        self.start_urls = [
-            Domain,
-        ]
+    def start_requests(self):
+        for category_code in CATEGORY.keys():
+            yield Request(
+                url=CATEGORY_URL + category_code + EXTENDED_URL + '0',
+                callback=self.parse,
+                meta={
+                    'category_code': category_code,
+                    'start': 20
+                }
+            )
 
     def parse(self, response):
-        # 网络情况
         if response.status != 200:
-            raise CloseSpider(u"网络状况有问题.")
+            raise CloseSpider('Error with network')
 
-        for pair in self.categories:
-            t1, printable_time = get_current_time()
-            print(printable_time + " : Start to crawl " + pair[1])
+        json_data = json.loads(response.body_as_unicode())
+        category_code = response.meta['category_code']
+        total_count = json_data['count']
+        stop_flag = total_count < 20 or CATEGORY[category_code] >= MAX_APP
 
-            for i in range(1, 2):  # 页数
-                yield Request(url=CATEGORY_URL + str(pair[0]), callback=self.parse_page)
+        for app_info in json_data['obj']:
+            self.parse_app(app_info)
+        CATEGORY_URL[category_code] += total_count
 
-            t2, printable_time = get_current_time()
-            print(printable_time + " : End to crawl " + pair[1] + " taking %d s" % (get_interval_time(t1, t2)))
-
-    def parse_single_category(self, response):
-        app_urls = response.xpath(XPATH_APP_URL).extract()
-        for url in app_urls:
-            yield Request(url=Domain + url, callback=self.parse_app, meta={"store": "360"})
+        if not stop_flag:
+            start = response.meta['start']
+            yield Request(
+                url=CATEGORY_URL + category_code + EXTENDED_URL + start,
+                callback=self.parse,
+                meta={
+                    'category_code': category_code,
+                    'start': start+20
+                }
+            )
 
     @staticmethod
-    def parse_single_app(response):
-        item = Item_tencent()
-        item['name'] = response.xpath(XPATH_APP_NAME).extract()
-        item['apk'] = response.xpath(XAPTH_APP_DOWNLOAD_URL).extract()
+    def parse_app(app_info):
+        app_item = TencentAppGemItem()
+        app_item['app_name'] = app_info['appName']
+        app_item['apk_size'] = app_info['fileSize']
+        app_item['apk_url'] = app_info['apkUrl']
+        app_item['download_count'] = app_info['appDownCount']
+        app_item['seller'] = app_info['authorName']
+        app_item['rating'] = app_info['averageRating']
+        app_item['category'] = app_info['categoryName']
