@@ -3,7 +3,7 @@
 
 import time
 from collections import OrderedDict
-from ..utils.category import *
+# from ..utils.category import *
 
 
 # 时间统计
