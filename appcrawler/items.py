@@ -4,61 +4,55 @@
 from scrapy import Field, Item
 
 
-class Qihoo360StoreItem(Item):
-    store = Field()
+class QihooItem(Item):
+    category = Field()
     name = Field()
-    apk = Field()
-    file_urls = Field()
-    download_times = Field()
+    rating = Field()
+    apk_url = Field()
+    download_count = Field()
+    apk_size = Field()
 
 
-class TencentAppGemItem(Item):
-    store = Field()
+class TencentItem(Item):
     name = Field()
-    apk = Field()
-    file_urls = Field()
-    download_times = Field()
+    apk_size = Field()
+    apk_url = Field()
+    download_count = Field()
+    seller = Field()
+    rating = Field()
+    category = Field()
 
 
-class BaiduMobileAssistantItem(Item):
-    store = Field()
+class BaiduItem(Item):
     name = Field()
-    apk = Field()
-    file_urls = Field()
-    download_times = Field()
+    category = Field()
+    apk_url = Field()
+    apk_size = Field()
+    version = Field()
+    download_count = Field()
 
 
-class GooglePlayStoreItem(Item):
-    market = Field()
+class GoogleItem(Item):
     name = Field()
     app_id = Field()
     category = Field()
     version = Field()
     description = Field()
     improvement = Field()
-    url = Field()
+    app_url = Field()
     update_date = Field()
     score = Field()
     download_count = Field()
 
 
-class AppleAppStoreItem(Item):
+class AppleItem(Item):
     name = Field()          # name of app
-    is_iphone = Field()     #
-    is_ipad = Field()
-    is_ipod = Field()
-    description = Field()
-    artwork = Field()
-    subcategory = Field()
-    price = Field()
-    release_date = Field()
-    version = Field()
-    size = Field()
-    languages = Field()
-    seller = Field()
-    seller_link = Field()
-    copyright = Field()
-    rating = Field()
-    requirements = Field()
-    reviews = Field()
-    screenshots = Field()
+    seller = Field()        # name of seller
+    size = Field()          # size of apk
+    category = Field()      # category of app
+    is_iphone = Field()     # available on iPhone
+    is_ipad = Field()       # available on iPad
+    is_ipod = Field()       # available on iPod
+    languages = Field()     # supported language
+    rating = Field()        # rating of app
+    price = Field()         # price of app
