@@ -4,7 +4,7 @@
 import json
 from scrapy import Request, Spider
 from scrapy.exceptions import CloseSpider
-from ..items import TencentAppGemItem
+from ..items import TencentItem
 
 # Limit of APP number of each category
 MAX_APP = 100
@@ -85,8 +85,8 @@ class AppSpider(Spider):
 
     @staticmethod
     def parse_app(app_info):
-        app_item = TencentAppGemItem()
-        app_item['app_name'] = app_info['appName']
+        app_item = TencentItem()
+        app_item['name'] = app_info['appName']
         app_item['apk_size'] = app_info['fileSize']
         app_item['apk_url'] = app_info['apkUrl']
         app_item['download_count'] = app_info['appDownCount']
