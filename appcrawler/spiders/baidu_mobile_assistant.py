@@ -1,69 +1,94 @@
 # !/usr/bin/python
 # coding: utf-8
 
-from scrapy import Request, Spider
 from scrapy.exceptions import CloseSpider
-from ..items import BaiduMobileAssistantItem
+from scrapy import Request, Spider
+from ..items import BaiduItem
 
+# Limit Number of app for each category
+LIMIT_NUMBER_OF_APP = 100
 
 # Category
-CATEGORY = [
-    [501, u"系统工具"],
-    [502, u"主题壁纸"],
-    [503, u"社交通讯"],
-    [508, u"拍摄美化"],
-    [506, u"影音播放"],
-    [504, u"生活实用"],
-    [510, u"理财购物"],
-    [507, u"办公学习"],
-    [505, u"咨询阅读"],
-    [509, u"旅游出行"]
-]
+CATEGORY = {
+    '501': 0,
+    '502': 0,
+    '503': 0,
+    '504': 0,
+    '505': 0,
+    '506': 0,
+    '507': 0,
+    '508': 0,
+    '509': 0,
+    '510': 0
+}
 
 # URL
-Domain = "http://shouji.baidu.com"
-CATEGORY_URL = "http://shouji.baidu.com/software/"
+DOMAIN = 'http://shouji.baidu.com'
+CATEGORY_URL = 'http://shouji.baidu.com/software/'
+SELECT_PAGE = '/list_%d.html'
 
 # XPATH
-XAPTH_APP_NAME = ''
+XPATH_APP_URL = "//div[@class='app-bd']//li//a/@href"
+XPATH_APP_CATEGORY = "//div[@class='nav']//span[5]"
+XPATH_APP_NAME = "//div[@class='yui3-g']//h1[@class='app-name']/span"
+XPATH_APK_URL = "//div[@class='yui3-g']//div[@class='area-download']/a/@href"
+XPATH_APP_DETAIL = "//div[@class='yui3-g']//div[@class='detail']/span"
 
 
-class MAINSpider(Spider):
-    name = "baidu"
+class AppSpider(Spider):
+    name = 'baidu'
 
-    def __init__(self, cat=None, save=None, *args, **kwargs):
-        super(MAINSpider, self).__init__(*args, **kwargs)
-        self.allowed_domains = ["baidu.com"]
-        self.categories = handle_category(cat, 'baidu')
-        # self.save - 保存方式 - unfinished
+    def __init__(self, *args, **kwargs):
+        super(AppSpider, self).__init__(*args, **kwargs)
+        self.allowed_domains = [DOMAIN]
 
-        self.start_urls = [
-            Domain,
-        ]
+    # start with category urls
+    def start_requests(self):
+        for category_code in CATEGORY.keys():
+            yield Request(
+                url=CATEGORY_URL + category_code + SELECT_PAGE % 1,
+                callback=self.parse,
+                meta={
+                    'pageNo': 1,
+                    'cateNo': category_code
+                }
+            )
 
+    # iterate all page numbers
     def parse(self, response):
-        # 网络情况
         if response.status != 200:
-            raise CloseSpider(u"网络状况有问题.")
-
-        for pair in self.categories:
-            t1, printable_time = get_current_time()
-            print(printable_time + " : Start to crawl " + pair[1])
-
-            for i in range(1, 2):  # 页数
-                yield Request(url=CATEGORY_URL + str(pair[0]) + '&page_num=' + str(i), callback=self.parse_page)
-
-            t2, printable_time = get_current_time()
-            print(printable_time + " : End to crawl " + pair[1] + " taking %d s" % (get_interval_time(t1, t2)))
-
-    def parse_single_category(self, response):
-        app_urls = response.xpath(APP_URL_XPATH)
-        for url in app_urls:
-            yield Request(url=Domain + url, callback=self.parse_single_app)
+            return
+        # get all app urls on one page
+        app_urls = response.xpath(XPATH_APP_URL)
+        for app_url in app_urls:
+            yield Request(
+                url=CATEGORY_URL + app_url,
+                callback=self.parse_app
+            )
+        # limit of number of apps
+        cate_no = response.meta['cateNo']
+        CATEGORY[cate_no] += len(app_urls)
+        if CATEGORY[cate_no] > LIMIT_NUMBER_OF_APP:
+            CloseSpider()
+        # switch into the next page
+        page_no = response.meta['pageNo'] + 1
+        cate_no = response.meta['cateNo']
+        yield Request(
+            url=CATEGORY_URL + cate_no + SELECT_PAGE % page_no,
+            callback=self.parse,
+            meta={
+                'pageNo': page_no,
+                'cateNo': cate_no
+            }
+        )
 
     @staticmethod
-    def parse_single_app(response):
-        item = Item_tencent()
-        item['name'] = response.xpath(XPATH_APP_NAME).extract()
-        item['apk'] = response.xpath(XAPTH_APP_DOWNLOAD_URL).extract()
-
+    def parse_app(response):
+        app_item = BaiduItem()
+        app_item['name'] = response.xpath(XPATH_APP_NAME).extract()[0]
+        app_item['category'] = response.xpath(XPATH_APP_CATEGORY).extract()[0]
+        app_item['apk_url'] = response.xpath(XPATH_APK_URL).extract()[0]
+        detail = response.xpath(XPATH_APP_DETAIL).extract()
+        app_item['apk_size'] = detail[0]
+        app_item['version'] = detail[1]
+        app_item['download_count'] = detail[2]
