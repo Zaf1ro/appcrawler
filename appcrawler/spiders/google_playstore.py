@@ -1,13 +1,12 @@
 # !/usr/bin/python
 # coding: utf-8
 
-
 import scrapy
 import re
-from ..items import GooglePlayStoreItem
 from scrapy import log
 from scrapy.conf import settings
 from collections import defaultdict
+from ..items import GoogleItem
 
 SEARCH_URL = 'https://play.google.com/store/search?q={keyword}&c=apps'
 APP_URL_PREFIX = 'https://play.google.com'
@@ -134,14 +133,14 @@ class PlayStoreSpider(scrapy.Spider):
         if len(app_urls) == 60:
             self.start += 60
             yield scrapy.FormRequest(
-                response.url,
+                url=response.url,
+                callback=self.parse_category_page,
                 formdata={
                     'start': '%s' % self.start,
                     'num': '60',
                     'ipf': '1',
                     'xhr': '1',
-                },
-                callback=self.parse_category_page
+                }
             )
         else:
             print(response.url, self.count)
@@ -201,27 +200,25 @@ class PlayStoreSpider(scrapy.Spider):
             log.msg("Max Item reached", level=log.DEBUG)
             self.crawler.engine.close_spider(self, response=response)
 
-        app_item = GooglePlayStoreItem()
-        app_item['market'] = "GooglePlay"
+        app_item = GoogleItem()
         app_item['name'] = response.xpath(XPATH_APP_NAME).extract()[0]
         app_item['app_id'] = (response.url.split("id=")[1]).split("&")[0]
         app_item['category'] = response.xpath(XPATH_APP_CATEGORY).extract()[0]
         app_item['version'] = response.xpath(XPATH_APP_VERSION).extract()[0].strip()
         app_item['description'] = response.xpath(XPATH_APP_DESCRIPTION).extract()[1]
-        app_item['url'] = response.url
+        app_item['app_url'] = response.url
         app_item['update_date'] = response.xpath(XPATH_APP_PUBLISH_DATE).extract()[0]
 
         improvement = ""
         improvements = response.xpath(XPATH_APP_IMPROVEMENT).extract()
         for data in improvements:
             improvement += data + u'\n'
-        app_item['improvement'] = improvement
 
         app_item['score'] = response.xpath(XPATH_APP_SCORE_VALUE).extract()[0]
         app_item['download_count'] = response.xpath(XPATH_APP_INSTALLS).extract()[0].strip()
 
-        self.workbook.writerow(["GooglePlay", app_item["name"], app_item["app_id"], app_item["category"],
-                                app_item["version"], app_item["description"], app_item["improvement"],
-                                app_item["url"], app_item["update_date"], app_item["score"], app_item["download_count"]])
+        # self.workbook.writerow(["GooglePlay", app_item["name"], app_item["app_id"], app_item["category"],
+        #                         app_item["version"], app_item["description"], app_item["improvement"],
+        #                         app_item["url"], app_item["update_date"], app_item["score"], app_item["download_count"]])
 
         self.app_count += 1
