@@ -9,9 +9,9 @@
 #     http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 #     http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
 
-BOT_NAME = 'AppCrawler'
-SPIDER_MODULES = ['AppCrawler.spiders']
-NEWSPIDER_MODULE = 'AppCrawler.spiders'
+BOT_NAME = 'appcrawler'
+SPIDER_MODULES = ['appcrawler.spiders']
+NEWSPIDER_MODULE = 'appcrawler.spiders'
 
 # Delay for requests for the same website
 DOWNLOAD_DELAY = 1
@@ -57,25 +57,28 @@ COOKIES_ENABLED = False
 # Enable or disable spider middlewares
 DOWNLOADER_MIDDLEWARES = {
     'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': None,
-    'AppCrawler.middlewares.switch_useragent.SwitchUserAgentMiddleware': 400
+    'appcrawler.middlewares.SwitchUserAgentMiddleware': 400
 }
 
 # Download file from web
 ITEM_PIPELINES = {
-    'AppCrawler.pipelines.file_download_item.FileDownloadItem': 1,
+    # 'appcrawler.pipelines.FileDownloadPipeline': 1,
 }
 FILES_STORE = '/downloads'
+
+# Exporters
+# scrapy crawl 'spider_name' -o 'example.csv'
+FEED_EXPORTERS = {
+    'csv': 'appcrawler.exporters.CsvExporter',
+}
+
+# CSV Delimiter
+CSV_DELIMITER = ","
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
 # EXTENSIONS = {
 #    'scrapy.telnet.TelnetConsole': None,
-# }
-
-# Configure item pipelines
-# See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
-# ITEM_PIPELINES = {
-#    'AppCrawler.pipelines.SomePipeline': 300,
 # }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -91,7 +94,7 @@ FILES_STORE = '/downloads'
 
 # Enable and configure HTTP caching (disabled by default)
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
-# HTTPCACHE_ENABLED=True
+HTTPCACHE_ENABLED = False
 # HTTPCACHE_EXPIRATION_SECS=0
 # HTTPCACHE_DIR='httpcache'
 # HTTPCACHE_IGNORE_HTTP_CODES=[]
@@ -107,4 +110,4 @@ STORE_FIELDS = {
 }
 
 # Looking up custom Scrapy commands
-COMMANDS_MODULE = 'AppCrawler.commands'
+COMMANDS_MODULE = 'appcrawler.commands'
