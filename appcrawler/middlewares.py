@@ -4,7 +4,7 @@
 # Importing base64 library because we'll need it ONLY in case if the proxy we are going to use requires authentication
 import base64
 import random
-from scrapy.contrib.downloadermiddleware.useragent import UserAgentMiddleware
+from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
 
 
 # Start your middleware class
